@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Greg Clicker</title>
 
-<!-- Firebase (compat version for normal HTML pages) -->
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
@@ -17,49 +17,63 @@ body {
     background-color: rgba(0,0,0,0.6);
     background-blend-mode: darken;
     color: white;
-    padding-top: 40px;
+    padding-top: 60px;
 }
-#gregButton {
-    width: 250px;
-    border-radius: 20px;
-    cursor: pointer;
-}
+
 button {
-    padding: 8px 15px;
-    margin: 6px;
-    border-radius: 5px;
+    padding: 12px 20px;
+    margin: 15px;
+    border-radius: 8px;
     border: none;
-    background: limegreen;
+    font-size: 16px;
     font-weight: bold;
     cursor: pointer;
+    background: limegreen;
 }
-button:hover { background: green; }
-.booster { display:block; margin:8px auto; width:280px; }
+
+button:hover {
+    background: green;
+}
+
+#backButton {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 15px;
+    font-weight: bold;
+    background: orange;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+#backButton:hover {
+    background: darkorange;
+}
+
+/* Add your clicker/game styles below */
 </style>
 </head>
+
 <body>
 
-<h1>Click Greg 🐊</h1>
+<button id="backButton" onclick="location.href='index.html'">Back to Home</button>
 
-<input type="email" id="email" placeholder="Enter email to save">
-<br>
-<button onclick="saveProgress()">Save Progress</button>
+<h1>Greg Clicker Game</h1>
+<p>Click Greg to gain points!</p>
 
-<h2 id="score">Score: 0</h2>
-<img src="greg.png" id="gregButton" onclick="clickGreg()">
+<!-- Your clicker HTML elements -->
+<button id="gregButton">Click Greg!</button>
+<p>Points: <span id="points">0</span></p>
 
-<h2>Boosters</h2>
-<button class="booster" onclick="buyBooster('Bite Boost')">Bite Boost (+2 click, 30s) – 50</button>
-<button class="booster" onclick="buyBooster('Tail Whip')">Tail Whip (+5 every 10 clicks, 30s) – 200</button>
-<button class="booster" onclick="buyBooster('Swamp Potion')">Swamp Potion (x2, 60s) – 1000</button>
-<button class="booster" onclick="buyBooster('Croc Cannon')">Croc Cannon (50% triple, 15s) – 5000</button>
-<button class="booster" onclick="buyBooster('Croc Frenzy')">Croc Frenzy (auto 0.5s, 20s) – 50000</button>
-
-<h2>Leaderboard</h2>
+<!-- Leaderboard inside clicker if desired -->
+<div id="leaderboardBox">
+<h2>Global Leaderboard</h2>
 <ol id="leaderboardList"></ol>
+</div>
 
 <script>
-// 🔥 YOUR REAL FIREBASE CONFIG
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyDNEp1EgyNll0d7Pm-I_VDBAd7o6sgeE_Y",
   authDomain: "greg-clicker.firebaseapp.com",
@@ -72,122 +86,40 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Game variables
-let score = 0;
-let clickPower = 1;
-let tailCounter = 0;
-let autoClick = null;
-let active = {};
+// Clicker logic
+let points = 0;
+const pointsDisplay = document.getElementById("points");
+const gregButton = document.getElementById("gregButton");
 
-// Clicking Greg
-function clickGreg() {
-    let points = clickPower;
+gregButton.addEventListener("click", () => {
+    points++;
+    pointsDisplay.textContent = points;
+});
 
-    tailCounter++;
-    if (active["Tail Whip"] && tailCounter % 10 === 0) points += 5;
-
-    if (active["Croc Cannon"] && Math.random() < 0.5) points *= 3;
-
-    score += points;
-    document.getElementById("score").innerText = "Score: " + score;
-}
-
-// Buying boosters
-function buyBooster(name) {
-    let price = {
-        "Bite Boost": 50,
-        "Tail Whip": 200,
-        "Swamp Potion": 1000,
-        "Croc Cannon": 5000,
-        "Croc Frenzy": 50000
-    }[name];
-
-    if (score < price) {
-        alert("Not enough points!");
-        return;
-    }
-
-    score -= price;
-    document.getElementById("score").innerText = "Score: " + score;
-    activateBooster(name);
-}
-
-// Activate boosters
-function activateBooster(name) {
-
-    if (name === "Bite Boost") {
-        clickPower += 2;
-        active[name] = true;
-        setTimeout(() => {
-            clickPower -= 2;
-            delete active[name];
-        }, 30000);
-    }
-
-    if (name === "Tail Whip") {
-        active[name] = true;
-        setTimeout(() => {
-            delete active[name];
-        }, 30000);
-    }
-
-    if (name === "Swamp Potion") {
-        clickPower *= 2;
-        active[name] = true;
-        setTimeout(() => {
-            clickPower /= 2;
-            delete active[name];
-        }, 60000);
-    }
-
-    if (name === "Croc Cannon") {
-        active[name] = true;
-        setTimeout(() => {
-            delete active[name];
-        }, 15000);
-    }
-
-    if (name === "Croc Frenzy") {
-        autoClick = setInterval(clickGreg, 500);
-        active[name] = true;
-        setTimeout(() => {
-            clearInterval(autoClick);
-            delete active[name];
-        }, 20000);
-    }
-}
-
-// Save to Firestore
-async function saveProgress() {
-    const email = document.getElementById("email").value.trim();
-    if (!email) {
-        alert("Enter email first");
-        return;
-    }
-
-    await db.collection("scores").doc(email).set({ score: score });
-    alert("Saved!");
-    updateLeaderboard();
-}
-
-// Load leaderboard
+// Leaderboard
 async function updateLeaderboard() {
-    const snapshot = await db.collection("scores")
-        .orderBy("score", "desc")
-        .limit(10)
-        .get();
+    try {
+        const snapshot = await db.collection("scores")
+            .orderBy("score", "desc")
+            .limit(10)
+            .get();
 
-    const list = document.getElementById("leaderboardList");
-    list.innerHTML = "";
+        const list = document.getElementById("leaderboardList");
+        list.innerHTML = "";
 
-    snapshot.forEach(doc => {
-        const li = document.createElement("li");
-        li.textContent = doc.id + ": " + doc.data().score;
-        list.appendChild(li);
-    });
+        snapshot.forEach(doc => {
+            const li = document.createElement("li");
+            li.textContent = doc.id + ": " + doc.data().score;
+            list.appendChild(li);
+        });
+    } catch (err) {
+        console.error("Leaderboard error:", err);
+    }
 }
 
 updateLeaderboard();
+setInterval(updateLeaderboard, 10000);
+
 </script>
 
 </body>
