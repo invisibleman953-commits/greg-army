@@ -79,7 +79,7 @@ const firebaseConfig = {
   appId: "1:84612781202:web:d11607b4500e43a186424b"
 };
 
-// Initialize safely
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -104,10 +104,8 @@ async function updateLeaderboard() {
     }
 }
 
-// Load immediately
+// Load immediately and refresh every 10s
 updateLeaderboard();
-
-// Auto refresh every 10 seconds
 setInterval(updateLeaderboard, 10000);
 
 </script>
