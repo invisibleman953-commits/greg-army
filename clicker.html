@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Click Greg!</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: url("greg.png") no-repeat center center fixed;
+        background-size: cover;
+        text-align: center;
+        color: white;
+        padding-top: 50px;
+        background-blend-mode: darken;
+        background-color: rgba(0,0,0,0.6);
+    }
+    h1 { font-size: 3rem; text-shadow: 2px 2px 10px black; }
+    #gregButton {
+        width: 250px;
+        border-radius: 20px;
+        cursor: pointer;
+        border: none;
+        margin-top: 30px;
+    }
+    #score { font-size: 2rem; margin-top: 30px; }
+    input {
+        padding: 8px;
+        margin-top: 20px;
+        border-radius: 5px;
+        border: none;
+    }
+    button.saveLoad {
+        padding: 8px 15px;
+        margin: 10px;
+        border-radius: 5px;
+        border: none;
+        background-color: #7CFC00;
+        cursor: pointer;
+        font-weight: bold;
+    }
+</style>
+</head>
+<body>
+<h1>Click Greg for Points 🐊</h1>
+<input type="email" id="email" placeholder="Enter email to save progress">
+<br>
+<button class="saveLoad" onclick="saveProgress()">Save Progress</button>
+<button class="saveLoad" onclick="loadProgress()">Load Progress</button>
+
+<br>
+<img src="greg.png" id="gregButton" onclick="clickGreg()">
+
+<div id="score">Score: 0</div>
+
+<script>
+    let score = 0;
+
+    function clickGreg() {
+        score++;
+        document.getElementById("score").innerText = "Score: " + score;
+    }
+
+    function saveProgress() {
+        const email = document.getElementById("email").value.trim();
+        if (!email) { alert("Enter an email first"); return; }
+        localStorage.setItem(email + "_score", score);
+        alert("Progress saved for " + email);
+    }
+
+    function loadProgress() {
+        const email = document.getElementById("email").value.trim();
+        if (!email) { alert("Enter an email first"); return; }
+        const saved = localStorage.getItem(email + "_score");
+        if (saved !== null) {
+            score = parseInt(saved);
+            document.getElementById("score").innerText = "Score: " + score;
+            alert("Progress loaded for " + email);
+        } else {
+            alert("No saved progress for " + email);
+        }
+    }
+</script>
+</body>
+</html>
