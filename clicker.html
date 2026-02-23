@@ -23,62 +23,129 @@
         margin-top: 30px;
     }
     #score { font-size: 2rem; margin-top: 30px; }
-    input {
-        padding: 8px;
-        margin-top: 20px;
-        border-radius: 5px;
-        border: none;
-    }
-    button.saveLoad {
-        padding: 8px 15px;
-        margin: 10px;
-        border-radius: 5px;
-        border: none;
-        background-color: #7CFC00;
-        cursor: pointer;
-        font-weight: bold;
-    }
+    input { padding: 8px; margin-top: 20px; border-radius: 5px; border: none; }
+    button { padding: 8px 15px; margin: 10px; border-radius: 5px; border: none; background-color: #7CFC00; cursor: pointer; font-weight: bold; }
+    button:hover { background-color: #66cc00; }
+    .booster { display: block; margin: 10px auto; width: 250px; }
+    #boosters { margin-top: 30px; }
 </style>
 </head>
 <body>
 <h1>Click Greg for Points 🐊</h1>
+
 <input type="email" id="email" placeholder="Enter email to save progress">
 <br>
-<button class="saveLoad" onclick="saveProgress()">Save Progress</button>
-<button class="saveLoad" onclick="loadProgress()">Load Progress</button>
-
-<br>
-<img src="greg.png" id="gregButton" onclick="clickGreg()">
+<button onclick="saveProgress()">Save Progress</button>
+<button onclick="loadProgress()">Load Progress</button>
 
 <div id="score">Score: 0</div>
 
+<img src="greg.png" id="gregButton" onclick="clickGreg()">
+
+<div id="boosters">
+<h2>Boosters</h2>
+<button class="booster" onclick="buyBooster('Bite Boost')">Bite Boost (+2 per click, 30s) – 50 points</button>
+<button class="booster" onclick="buyBooster('Tail Whip')">Tail Whip (+5 every 10 clicks) – 200 points</button>
+<button class="booster" onclick="buyBooster('Swamp Potion')">Swamp Potion (x2 points, 60s) – 1000 points</button>
+<button class="booster" onclick="buyBooster('Croc Cannon')">Croc Cannon (50% chance triple click, 15s) – 5000 points</button>
+<button class="booster" onclick="buyBooster('Croc Frenzy')">Croc Frenzy (auto-click 0.5s, 20s) – 50000 points</button>
+</div>
+
 <script>
-    let score = 0;
+let score = 0;
+let clickPower = 1;
+let autoClickInterval = null;
+let tailCounter = 0;
+let activeBoosters = {};
 
-    function clickGreg() {
-        score++;
+function clickGreg() {
+    let pointsThisClick = clickPower;
+    
+    // Tail Whip bonus every 10 clicks
+    tailCounter++;
+    if (activeBoosters['Tail Whip'] && tailCounter % 10 === 0) {
+        pointsThisClick += 5;
+    }
+
+    // Croc Cannon bonus
+    if (activeBoosters['Croc Cannon'] && Math.random() < 0.5) {
+        pointsThisClick *= 3;
+    }
+
+    score += pointsThisClick;
+    document.getElementById("score").innerText = "Score: " + score;
+}
+
+function buyBooster(name) {
+    let price = 0;
+    switch(name){
+        case 'Bite Boost': price = 50; break;
+        case 'Tail Whip': price = 200; break;
+        case 'Swamp Potion': price = 1000; break;
+        case 'Croc Cannon': price = 5000; break;
+        case 'Croc Frenzy': price = 50000; break;
+    }
+
+    if(score < price){
+        alert("Not enough points!");
+        return;
+    }
+    score -= price;
+    document.getElementById("score").innerText = "Score: " + score;
+
+    activateBooster(name);
+}
+
+function activateBooster(name){
+    if(name === 'Bite Boost'){
+        clickPower += 2;
+        activeBoosters[name] = true;
+        setTimeout(()=>{ clickPower -= 2; delete activeBoosters[name]; }, 30000);
+    }
+    else if(name === 'Tail Whip'){
+        activeBoosters[name] = true;
+        setTimeout(()=>{ delete activeBoosters[name]; }, 30000);
+    }
+    else if(name === 'Swamp Potion'){
+        clickPower *= 2;
+        activeBoosters[name] = true;
+        setTimeout(()=>{ clickPower /= 2; delete activeBoosters[name]; }, 60000);
+    }
+    else if(name === 'Croc Cannon'){
+        activeBoosters[name] = true;
+        setTimeout(()=>{ delete activeBoosters[name]; }, 15000);
+    }
+    else if(name === 'Croc Frenzy'){
+        if(autoClickInterval) clearInterval(autoClickInterval);
+        autoClickInterval = setInterval(clickGreg, 500);
+        activeBoosters[name] = true;
+        setTimeout(()=>{
+            clearInterval(autoClickInterval);
+            autoClickInterval = null;
+            delete activeBoosters[name];
+        }, 20000);
+    }
+}
+
+function saveProgress(){
+    const email = document.getElementById("email").value.trim();
+    if(!email){ alert("Enter your email!"); return; }
+    localStorage.setItem(email+"_score", score);
+    alert("Progress saved for " + email);
+}
+
+function loadProgress(){
+    const email = document.getElementById("email").value.trim();
+    if(!email){ alert("Enter your email!"); return; }
+    let saved = localStorage.getItem(email+"_score");
+    if(saved !== null){
+        score = parseInt(saved);
         document.getElementById("score").innerText = "Score: " + score;
+        alert("Progress loaded for " + email);
+    } else {
+        alert("No saved progress for " + email);
     }
-
-    function saveProgress() {
-        const email = document.getElementById("email").value.trim();
-        if (!email) { alert("Enter an email first"); return; }
-        localStorage.setItem(email + "_score", score);
-        alert("Progress saved for " + email);
-    }
-
-    function loadProgress() {
-        const email = document.getElementById("email").value.trim();
-        if (!email) { alert("Enter an email first"); return; }
-        const saved = localStorage.getItem(email + "_score");
-        if (saved !== null) {
-            score = parseInt(saved);
-            document.getElementById("score").innerText = "Score: " + score;
-            alert("Progress loaded for " + email);
-        } else {
-            alert("No saved progress for " + email);
-        }
-    }
+}
 </script>
 </body>
 </html>
