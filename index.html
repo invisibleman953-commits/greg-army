@@ -1,4 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Greg Army</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<style>
+body {
+    font-family: Arial;
+    text-align: center;
+    background: url("greg.png") no-repeat center center fixed;
+    background-size: cover;
+    background-color: rgba(0,0,0,0.6);
+    background-blend-mode: darken;
+    color: white;
+    padding-top: 60px;
+}
+
+button {
+    padding: 12px 20px;
+    margin: 15px;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    background: limegreen;
+}
+
+button:hover {
+    background: green;
+}
+
+#leaderboardBox {
+    margin-top: 40px;
+    background: rgba(0,0,0,0.6);
+    display: inline-block;
+    padding: 20px;
+    border-radius: 15px;
+    width: 320px;
+}
+</style>
+</head>
+<body>
+
+<h1>Welcome to Greg Army 🐊</h1>
+
+<button onclick="location.href='clicker.html'">
+Play Clicker Game
+</button>
+
+<button onclick="joinArmy()">
+Join Army
+</button>
+
+<div id="leaderboardBox">
+<h2>Global Leaderboard</h2>
+<ol id="leaderboardList"></ol>
+</div>
+
 <script>
+// Join Army function
+function joinArmy() {
+    alert("You are now officially part of the Greg Army 🐊");
+}
+
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyDNEp1EgyNll0d7Pm-I_VDBAd7o6sgeE_Y",
   authDomain: "greg-clicker.firebaseapp.com",
@@ -8,34 +78,33 @@ const firebaseConfig = {
   appId: "1:84612781202:web:d11607b4500e43a186424b"
 };
 
-// Prevent double initialization
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
 const db = firebase.firestore();
 
+// Load leaderboard
 async function updateLeaderboard() {
-    try {
-        const snapshot = await db.collection("scores")
-            .orderBy("score", "desc")
-            .limit(10)
-            .get();
+    const snapshot = await db.collection("scores")
+        .orderBy("score", "desc")
+        .limit(10)
+        .get();
 
-        const list = document.getElementById("leaderboardList");
-        list.innerHTML = "";
+    const list = document.getElementById("leaderboardList");
+    list.innerHTML = "";
 
-        snapshot.forEach(doc => {
-            const li = document.createElement("li");
-            li.textContent = doc.id + ": " + doc.data().score;
-            list.appendChild(li);
-        });
-
-    } catch (error) {
-        console.error("Leaderboard error:", error);
-    }
+    snapshot.forEach(doc => {
+        const li = document.createElement("li");
+        li.textContent = doc.id + ": " + doc.data().score;
+        list.appendChild(li);
+    });
 }
 
 updateLeaderboard();
 setInterval(updateLeaderboard, 10000);
+
 </script>
+
+</body>
+</html>
