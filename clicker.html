@@ -1,171 +1,193 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Click Greg!</title>
+<title>Greg Clicker</title>
 
-<!-- Firebase SDK -->
+<!-- Firebase (compat version for normal HTML pages) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        background: url("greg.png") no-repeat center center fixed;
-        background-size: cover;
-        text-align: center;
-        color: white;
-        padding-top: 50px;
-        background-blend-mode: darken;
-        background-color: rgba(0,0,0,0.6);
-    }
-    h1 { font-size: 3rem; text-shadow: 2px 2px 10px black; }
-    #gregButton { width: 250px; border-radius: 20px; cursor: pointer; border: none; margin-top: 30px; }
-    #score { font-size: 2rem; margin-top: 30px; }
-    input { padding: 8px; margin-top: 20px; border-radius: 5px; border: none; }
-    button { padding: 8px 15px; margin: 10px; border-radius: 5px; border: none; background-color: #7CFC00; cursor: pointer; font-weight: bold; }
-    button:hover { background-color: #66cc00; }
-    .booster { display: block; margin: 10px auto; width: 250px; }
-    #boosters { margin-top: 30px; }
-    #leaderboard { margin-top: 40px; }
+body {
+    font-family: Arial;
+    text-align: center;
+    background: url("greg.png") no-repeat center center fixed;
+    background-size: cover;
+    background-color: rgba(0,0,0,0.6);
+    background-blend-mode: darken;
+    color: white;
+    padding-top: 40px;
+}
+#gregButton {
+    width: 250px;
+    border-radius: 20px;
+    cursor: pointer;
+}
+button {
+    padding: 8px 15px;
+    margin: 6px;
+    border-radius: 5px;
+    border: none;
+    background: limegreen;
+    font-weight: bold;
+    cursor: pointer;
+}
+button:hover { background: green; }
+.booster { display:block; margin:8px auto; width:280px; }
 </style>
 </head>
 <body>
 
-<h1>Click Greg for Points 🐊</h1>
+<h1>Click Greg 🐊</h1>
 
-<input type="email" id="email" placeholder="Enter email to save progress">
+<input type="email" id="email" placeholder="Enter email to save">
 <br>
 <button onclick="saveProgress()">Save Progress</button>
 
-<div id="score">Score: 0</div>
+<h2 id="score">Score: 0</h2>
 <img src="greg.png" id="gregButton" onclick="clickGreg()">
 
-<div id="boosters">
 <h2>Boosters</h2>
-<button class="booster" onclick="buyBooster('Bite Boost')">Bite Boost (+2 per click, 30s) – 50 points</button>
-<button class="booster" onclick="buyBooster('Tail Whip')">Tail Whip (+5 every 10 clicks) – 200 points</button>
-<button class="booster" onclick="buyBooster('Swamp Potion')">Swamp Potion (x2 points, 60s) – 1000 points</button>
-<button class="booster" onclick="buyBooster('Croc Cannon')">Croc Cannon (50% chance triple click, 15s) – 5000 points</button>
-<button class="booster" onclick="buyBooster('Croc Frenzy')">Croc Frenzy (auto-click 0.5s, 20s) – 50000 points</button>
-</div>
+<button class="booster" onclick="buyBooster('Bite Boost')">Bite Boost (+2 click, 30s) – 50</button>
+<button class="booster" onclick="buyBooster('Tail Whip')">Tail Whip (+5 every 10 clicks, 30s) – 200</button>
+<button class="booster" onclick="buyBooster('Swamp Potion')">Swamp Potion (x2, 60s) – 1000</button>
+<button class="booster" onclick="buyBooster('Croc Cannon')">Croc Cannon (50% triple, 15s) – 5000</button>
+<button class="booster" onclick="buyBooster('Croc Frenzy')">Croc Frenzy (auto 0.5s, 20s) – 50000</button>
 
-<div id="leaderboard">
 <h2>Leaderboard</h2>
 <ol id="leaderboardList"></ol>
-</div>
 
 <script>
-// Firebase config
+// 🔥 YOUR REAL FIREBASE CONFIG
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDNEp1EgyNll0d7Pm-I_VDBAd7o6sgeE_Y",
+  authDomain: "greg-clicker.firebaseapp.com",
+  projectId: "greg-clicker",
+  storageBucket: "greg-clicker.firebasestorage.app",
+  messagingSenderId: "84612781202",
+  appId: "1:84612781202:web:d11607b4500e43a186424b"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // Game variables
 let score = 0;
 let clickPower = 1;
-let autoClickInterval = null;
 let tailCounter = 0;
-let activeBoosters = {};
+let autoClick = null;
+let active = {};
 
 // Clicking Greg
 function clickGreg() {
-    let pointsThisClick = clickPower;
+    let points = clickPower;
 
-    // Tail Whip bonus
     tailCounter++;
-    if(activeBoosters['Tail Whip'] && tailCounter % 10 === 0) pointsThisClick += 5;
+    if (active["Tail Whip"] && tailCounter % 10 === 0) points += 5;
 
-    // Croc Cannon bonus
-    if(activeBoosters['Croc Cannon'] && Math.random() < 0.5) pointsThisClick *= 3;
+    if (active["Croc Cannon"] && Math.random() < 0.5) points *= 3;
 
-    score += pointsThisClick;
+    score += points;
     document.getElementById("score").innerText = "Score: " + score;
 }
 
-// Buy boosters
+// Buying boosters
 function buyBooster(name) {
-    let price = 0;
-    switch(name){
-        case 'Bite Boost': price=50; break;
-        case 'Tail Whip': price=200; break;
-        case 'Swamp Potion': price=1000; break;
-        case 'Croc Cannon': price=5000; break;
-        case 'Croc Frenzy': price=50000; break;
+    let price = {
+        "Bite Boost": 50,
+        "Tail Whip": 200,
+        "Swamp Potion": 1000,
+        "Croc Cannon": 5000,
+        "Croc Frenzy": 50000
+    }[name];
+
+    if (score < price) {
+        alert("Not enough points!");
+        return;
     }
 
-    if(score < price){ alert("Not enough points!"); return; }
     score -= price;
     document.getElementById("score").innerText = "Score: " + score;
-
     activateBooster(name);
 }
 
-// Activate boosters with timers
-function activateBooster(name){
-    if(name==='Bite Boost'){
+// Activate boosters
+function activateBooster(name) {
+
+    if (name === "Bite Boost") {
         clickPower += 2;
-        activeBoosters[name]=true;
-        setTimeout(()=>{ clickPower-=2; delete activeBoosters[name]; }, 30000);
+        active[name] = true;
+        setTimeout(() => {
+            clickPower -= 2;
+            delete active[name];
+        }, 30000);
     }
-    else if(name==='Tail Whip'){
-        activeBoosters[name]=true;
-        setTimeout(()=>{ delete activeBoosters[name]; }, 30000);
+
+    if (name === "Tail Whip") {
+        active[name] = true;
+        setTimeout(() => {
+            delete active[name];
+        }, 30000);
     }
-    else if(name==='Swamp Potion'){
+
+    if (name === "Swamp Potion") {
         clickPower *= 2;
-        activeBoosters[name]=true;
-        setTimeout(()=>{ clickPower/=2; delete activeBoosters[name]; }, 60000);
+        active[name] = true;
+        setTimeout(() => {
+            clickPower /= 2;
+            delete active[name];
+        }, 60000);
     }
-    else if(name==='Croc Cannon'){
-        activeBoosters[name]=true;
-        setTimeout(()=>{ delete activeBoosters[name]; }, 15000);
+
+    if (name === "Croc Cannon") {
+        active[name] = true;
+        setTimeout(() => {
+            delete active[name];
+        }, 15000);
     }
-    else if(name==='Croc Frenzy'){
-        if(autoClickInterval) clearInterval(autoClickInterval);
-        autoClickInterval = setInterval(clickGreg, 500);
-        activeBoosters[name]=true;
-        setTimeout(()=>{
-            clearInterval(autoClickInterval);
-            autoClickInterval=null;
-            delete activeBoosters[name];
+
+    if (name === "Croc Frenzy") {
+        autoClick = setInterval(clickGreg, 500);
+        active[name] = true;
+        setTimeout(() => {
+            clearInterval(autoClick);
+            delete active[name];
         }, 20000);
     }
 }
 
-// Save progress to Firestore
-async function saveProgress(){
+// Save to Firestore
+async function saveProgress() {
     const email = document.getElementById("email").value.trim();
-    if(!email){ alert("Enter email!"); return; }
-    await db.collection("scores").doc(email).set({score});
-    alert("Progress saved to cloud!");
+    if (!email) {
+        alert("Enter email first");
+        return;
+    }
+
+    await db.collection("scores").doc(email).set({ score: score });
+    alert("Saved!");
     updateLeaderboard();
 }
 
 // Load leaderboard
-async function updateLeaderboard(){
-    const snapshot = await db.collection("scores").orderBy("score","desc").limit(10).get();
+async function updateLeaderboard() {
+    const snapshot = await db.collection("scores")
+        .orderBy("score", "desc")
+        .limit(10)
+        .get();
+
     const list = document.getElementById("leaderboardList");
     list.innerHTML = "";
-    snapshot.forEach(doc=>{
+
+    snapshot.forEach(doc => {
         const li = document.createElement("li");
         li.textContent = doc.id + ": " + doc.data().score;
         list.appendChild(li);
     });
 }
 
-// Load leaderboard on page load
 updateLeaderboard();
-
 </script>
 
 </body>
