@@ -12,7 +12,8 @@ body {
     background-color: rgba(0,0,0,0.6);
     background-blend-mode: darken;
     color: white;
-    padding-top: 80px;
+    margin: 0;
+    padding-top: 50px;
 }
 #backButton {
     position: fixed;
@@ -29,12 +30,26 @@ body {
     width: 250px;
     cursor: pointer;
     transition: transform 0.1s ease;
+    display: block;
+    margin: 0 auto;
 }
 #gregImage:active { transform: scale(1.1); }
-button { padding: 12px 20px; margin: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background: limegreen; }
+#gameContainer {
+    display: flex;
+    justify-content: space-between;
+    max-width: 900px;
+    margin: 20px auto;
+}
+#boostSection, #megaBoostSection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 200px;
+}
+button { padding: 10px 15px; margin: 10px 0; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background: limegreen; }
 button:hover { background: green; }
-#boostSection, #megaBoostSection { display: inline-block; vertical-align: top; margin-top: 25px; }
 #authSection { margin-top: 20px; }
+.timerDisplay { font-size: 14px; margin-bottom: 5px; }
 </style>
 
 <!-- Firebase -->
@@ -50,22 +65,28 @@ button:hover { background: green; }
 <p>Points: <span id="points">0</span></p>
 <p>Multiplier: x<span id="multiplier">1</span></p>
 <p id="biteDisplay">Bite Power: +0</p>
-<p id="timerDisplay">Boost Timer: 0s</p>
 
 <img src="greg.png" id="gregImage" alt="Greg">
 
-<div id="boostSection">
-<h2>Boosts</h2>
-<button id="biteBtn" onclick="buyBite()">Buy Bite Boost (Cost: 75)</button>
-<button id="multiBtn" onclick="buyMultiplier()">Buy x2 Multiplier (Cost: 50)</button>
-<button id="autoBtn" onclick="buyAutoClicker()">Buy Auto Clicker (Cost: 100)</button>
-</div>
+<div id="gameContainer">
+    <div id="boostSection">
+        <h3>Boosts</h3>
+        <div class="timerDisplay" id="biteTimer">Bite: 0s</div>
+        <button id="biteBtn" onclick="buyBite()">Buy Bite Boost (Cost: 75)</button>
 
-<div id="megaBoostSection">
-<h2>Mega Boosts</h2>
-<button id="megaMult1" onclick="buyMegaMultiplier1()">x10 Multiplier (Cost: 50000)</button>
-<button id="megaMult2" onclick="buyMegaMultiplier2()">x25 Multiplier (Cost: 200000)</button>
-<button id="megaBite" onclick="buyMegaBite()">Mega Bite Boost +50 (Cost: 100000)</button>
+        <div class="timerDisplay" id="multiTimer">Multiplier: 0s</div>
+        <button id="multiBtn" onclick="buyMultiplier()">Buy x2 Multiplier (Cost: 50)</button>
+
+        <div class="timerDisplay" id="autoTimer">AutoClicker: 0s</div>
+        <button id="autoBtn" onclick="buyAutoClicker()">Buy Auto Clicker (Cost: 100)</button>
+    </div>
+
+    <div id="megaBoostSection">
+        <h3>Mega Boosts</h3>
+        <button id="megaMult1" onclick="buyMegaMultiplier1()">x10 Multiplier (Cost: 50000)</button>
+        <button id="megaMult2" onclick="buyMegaMultiplier2()">x25 Multiplier (Cost: 200000)</button>
+        <button id="megaBite" onclick="buyMegaBite()">Mega Bite +50 (Cost: 100000)</button>
+    </div>
 </div>
 
 <div id="authSection">
@@ -88,55 +109,62 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// --- Variables ---
+// --- Game Variables ---
 let points = parseInt(localStorage.getItem("gregPoints") || 0);
 let multiplier = parseInt(localStorage.getItem("gregMultiplier") || 1);
 let bitePower = parseInt(localStorage.getItem("gregBite") || 0);
 let autoClickers = parseInt(localStorage.getItem("gregAuto") || 0);
 
-// Boost costs
 let biteCost = parseInt(localStorage.getItem("gregBiteCost") || 75);
 let multiCost = parseInt(localStorage.getItem("gregMultiCost") || 50);
 let autoCost = parseInt(localStorage.getItem("gregAutoCost") || 100);
 
-// Mega boosts
 let megaMult1Bought = localStorage.getItem("megaMult1") === "true";
 let megaMult2Bought = localStorage.getItem("megaMult2") === "true";
 let megaBiteBought = localStorage.getItem("megaBite") === "true";
 
-// Timed boosts
-let boostTimers = {}; // {bite: secs, multiplier: secs, auto: secs}
+// Individual timers for boosts
+let boostTimers = {bite:0, multiplier:0, auto:0};
 
-// DOM elements
+// --- DOM Elements ---
 const pointsDisplay = document.getElementById("points");
 const multiplierDisplay = document.getElementById("multiplier");
 const biteDisplayEl = document.getElementById("biteDisplay");
 const gregImage = document.getElementById("gregImage");
+
 const biteBtn = document.getElementById("biteBtn");
 const multiBtn = document.getElementById("multiBtn");
 const autoBtn = document.getElementById("autoBtn");
+
+const biteTimerEl = document.getElementById("biteTimer");
+const multiTimerEl = document.getElementById("multiTimer");
+const autoTimerEl = document.getElementById("autoTimer");
+
 const mega1Btn = document.getElementById("megaMult1");
 const mega2Btn = document.getElementById("megaMult2");
 const megaBiteBtn = document.getElementById("megaBite");
-const timerDisplay = document.getElementById("timerDisplay");
 
-// --- Display Update ---
-function updateDisplay() {
-    pointsDisplay.textContent = points;
-    multiplierDisplay.textContent = multiplier;
-    biteDisplayEl.textContent = "Bite Power: +" + bitePower;
+// --- Update Display ---
+function updateDisplay(){
+    pointsDisplay.textContent=points;
+    multiplierDisplay.textContent=multiplier;
+    biteDisplayEl.textContent="Bite Power: +"+bitePower;
 
-    biteBtn.textContent = `Buy Bite Boost (Cost: ${biteCost})`;
-    multiBtn.textContent = `Buy x2 Multiplier (Cost: ${multiCost})`;
-    autoBtn.textContent = `Buy Auto Clicker (Cost: ${autoCost}) | Owned: ${autoClickers}`;
+    biteBtn.textContent=`Buy Bite Boost (Cost: ${biteCost})`;
+    multiBtn.textContent=`Buy x2 Multiplier (Cost: ${multiCost})`;
+    autoBtn.textContent=`Buy Auto Clicker (Cost: ${autoCost}) | Owned: ${autoClickers}`;
 
-    mega1Btn.disabled = megaMult1Bought;
-    mega2Btn.disabled = megaMult2Bought;
-    megaBiteBtn.disabled = megaBiteBought;
+    mega1Btn.disabled=megaMult1Bought;
+    mega2Btn.disabled=megaMult2Bought;
+    megaBiteBtn.disabled=megaBiteBought;
+
+    biteTimerEl.textContent = `Bite: ${boostTimers.bite}s`;
+    multiTimerEl.textContent = `Multiplier: ${boostTimers.multiplier}s`;
+    autoTimerEl.textContent = `AutoClicker: ${boostTimers.auto}s`;
 }
 
-// --- Save/Load ---
-function saveGame() {
+// --- Save / Load ---
+function saveGame(){
     localStorage.setItem("gregPoints", points);
     localStorage.setItem("gregMultiplier", multiplier);
     localStorage.setItem("gregBite", bitePower);
@@ -151,53 +179,41 @@ function saveGame() {
 }
 
 // --- Click Greg ---
-gregImage.addEventListener("click", () => {
-    points += multiplier + bitePower;
-    updateDisplay();
-    saveGame();
-});
+gregImage.addEventListener("click", ()=>{points+=multiplier+bitePower; updateDisplay(); saveGame();});
 
 // --- Normal Boosts ---
-function buyBite() { if(points>=biteCost){points-=biteCost; bitePower+=1; biteCost=Math.floor(biteCost*1.7); startBoostTimer("bite",30); updateDisplay(); saveGame();} }
-function buyMultiplier() { if(points>=multiCost){points-=multiCost; multiplier*=2; multiCost=Math.floor(multiCost*2); startBoostTimer("multiplier",30); updateDisplay(); saveGame();} }
-function buyAutoClicker() { if(points>=autoCost){points-=autoCost; autoClickers++; autoCost=Math.floor(autoCost*1.8); startBoostTimer("auto",30); updateDisplay(); saveGame();} }
+function startBoostTimer(name,duration){
+    boostTimers[name]=duration;
+    const interval=setInterval(()=>{
+        if(boostTimers[name]>0){ boostTimers[name]--; updateDisplay(); }
+        else { 
+            if(name==="bite") bitePower=Math.max(0,bitePower-1);
+            if(name==="multiplier") multiplier=Math.max(1,multiplier/2);
+            if(name==="auto") autoClickers=Math.max(0,autoClickers-1);
+            updateDisplay(); clearInterval(interval);
+        }
+    },1000);
+}
+
+function buyBite(){ if(points>=biteCost){points-=biteCost; bitePower+=1; biteCost=Math.floor(biteCost*1.7); startBoostTimer("bite",30); updateDisplay(); saveGame();} }
+function buyMultiplier(){ if(points>=multiCost){points-=multiCost; multiplier*=2; multiCost=Math.floor(multiCost*2); startBoostTimer("multiplier",30); updateDisplay(); saveGame();} }
+function buyAutoClicker(){ if(points>=autoCost){points-=autoCost; autoClickers++; autoCost=Math.floor(autoCost*1.8); startBoostTimer("auto",30); updateDisplay(); saveGame();} }
 
 // --- Mega Boosts ---
 function buyMegaMultiplier1(){if(!megaMult1Bought && points>=50000){points-=50000; multiplier*=10; megaMult1Bought=true; updateDisplay(); saveGame();}}
 function buyMegaMultiplier2(){if(!megaMult2Bought && points>=200000){points-=200000; multiplier*=25; megaMult2Bought=true; updateDisplay(); saveGame();}}
 function buyMegaBite(){if(!megaBiteBought && points>=100000){points-=100000; bitePower+=50; megaBiteBought=true; updateDisplay(); saveGame();}}
 
-// --- Timed Boost Timer ---
-function startBoostTimer(boost,duration){
-    boostTimers[boost]=duration;
-    const interval=setInterval(()=>{
-        if(boostTimers[boost]>0){
-            boostTimers[boost]--;
-            timerDisplay.textContent=`Boost Timer: ${boostTimers[boost]}s`;
-        }else{
-            if(boost==="bite") bitePower=Math.max(0,bitePower-1);
-            if(boost==="multiplier") multiplier=Math.max(1,multiplier/2);
-            if(boost==="auto") autoClickers=Math.max(0,autoClickers-1);
-            updateDisplay();
-            clearInterval(interval);
-            timerDisplay.textContent="Boost Timer: 0s";
-        }
-    },1000);
-}
-
 // --- Auto Clicker ---
 setInterval(()=>{if(autoClickers>0){points+=autoClickers; updateDisplay(); saveGame();}},1000);
 
 // --- Firebase Auth ---
 function login(){
-    const provider=new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider)
-    .then(result=>alert("Logged in as: "+result.user.email))
-    .catch(err=>console.error(err));
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).then(result=>alert("Logged in as: "+result.user.email)).catch(err=>console.error(err));
 }
-
 function saveToFirebase(){
-    const user=auth.currentUser;
+    const user = auth.currentUser;
     if(!user) return alert("Sign in first!");
     db.collection("users").doc(user.uid).set({
         points, multiplier, bitePower, autoClickers,
@@ -206,30 +222,23 @@ function saveToFirebase(){
         boostTimers
     }).then(()=>alert("Progress saved!"));
 }
-
 function loadFromFirebase(){
-    const user=auth.currentUser;
+    const user = auth.currentUser;
     if(!user) return alert("Sign in first!");
     db.collection("users").doc(user.uid).get().then(doc=>{
         if(!doc.exists) return alert("No saved data!");
         const data=doc.data();
-        points=data.points;
-        multiplier=data.multiplier;
-        bitePower=data.bitePower;
-        autoClickers=data.autoClickers;
-        biteCost=data.biteCost;
-        multiCost=data.multiCost;
-        autoCost=data.autoCost;
-        megaMult1Bought=data.megaMult1Bought;
-        megaMult2Bought=data.megaMult2Bought;
-        megaBiteBought=data.megaBiteBought;
+        points=data.points; multiplier=data.multiplier; bitePower=data.bitePower;
+        autoClickers=data.autoClickers; biteCost=data.biteCost; multiCost=data.multiCost; autoCost=data.autoCost;
+        megaMult1Bought=data.megaMult1Bought; megaMult2Bought=data.megaMult2Bought; megaBiteBought=data.megaBiteBought;
         boostTimers=data.boostTimers || {};
         updateDisplay();
     });
 }
 
-// --- Initialize ---
+// --- Init ---
 updateDisplay();
 </script>
+
 </body>
 </html>
