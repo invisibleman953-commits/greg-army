@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>Greg Clicker</title>
-
 <style>
 body {
     font-family: Arial;
@@ -15,7 +14,6 @@ body {
     color: white;
     padding-top: 80px;
 }
-
 #backButton {
     position: fixed;
     top: 20px;
@@ -27,17 +25,12 @@ body {
     border-radius: 8px;
     cursor: pointer;
 }
-
 #gregImage {
     width: 250px;
     cursor: pointer;
     transition: transform 0.1s ease;
 }
-
-#gregImage:active {
-    transform: scale(1.1);
-}
-
+#gregImage:active { transform: scale(1.1); }
 button {
     padding: 12px 20px;
     margin: 10px;
@@ -47,27 +40,14 @@ button {
     cursor: pointer;
     background: limegreen;
 }
-
-button:hover {
-    background: green;
-}
-
-#boostSection, #megaBoostSection {
-    margin-top: 25px;
-    display: inline-block;
-    vertical-align: top;
-}
+button:hover { background: green; }
+#boostSection, #megaBoostSection { display: inline-block; vertical-align: top; margin-top: 25px; }
 </style>
 </head>
-
 <body>
 
-<button id="backButton" onclick="location.href='index.html'">
-Back to Home
-</button>
-
+<button id="backButton" onclick="location.href='index.html'">Back to Home</button>
 <h1>Greg Clicker 🐊</h1>
-
 <p>Points: <span id="points">0</span></p>
 <p>Multiplier: x<span id="multiplier">1</span></p>
 <p id="biteDisplay">Bite Power: +0</p>
@@ -89,18 +69,18 @@ Back to Home
 </div>
 
 <script>
-// Load saved values
-let points = localStorage.getItem("gregPoints") ? parseInt(localStorage.getItem("gregPoints")) : 0;
-let multiplier = localStorage.getItem("gregMultiplier") ? parseInt(localStorage.getItem("gregMultiplier")) : 1;
-let bitePower = localStorage.getItem("gregBite") ? parseInt(localStorage.getItem("gregBite")) : 0;
-let autoClickers = localStorage.getItem("gregAuto") ? parseInt(localStorage.getItem("gregAuto")) : 0;
+// --- Variables ---
+let points = parseInt(localStorage.getItem("gregPoints") || 0);
+let multiplier = parseInt(localStorage.getItem("gregMultiplier") || 1);
+let bitePower = parseInt(localStorage.getItem("gregBite") || 0);
+let autoClickers = parseInt(localStorage.getItem("gregAuto") || 0);
 
 // Boost costs
-let biteCost = localStorage.getItem("gregBiteCost") ? parseInt(localStorage.getItem("gregBiteCost")) : 75;
-let multiCost = localStorage.getItem("gregMultiCost") ? parseInt(localStorage.getItem("gregMultiCost")) : 50;
-let autoCost = localStorage.getItem("gregAutoCost") ? parseInt(localStorage.getItem("gregAutoCost")) : 100;
+let biteCost = parseInt(localStorage.getItem("gregBiteCost") || 75);
+let multiCost = parseInt(localStorage.getItem("gregMultiCost") || 50);
+let autoCost = parseInt(localStorage.getItem("gregAutoCost") || 100);
 
-// Mega boost purchased flags
+// Mega boosts
 let megaMult1Bought = localStorage.getItem("megaMult1") === "true";
 let megaMult2Bought = localStorage.getItem("megaMult2") === "true";
 let megaBiteBought = localStorage.getItem("megaBite") === "true";
@@ -110,25 +90,29 @@ const pointsDisplay = document.getElementById("points");
 const multiplierDisplay = document.getElementById("multiplier");
 const biteDisplayEl = document.getElementById("biteDisplay");
 const gregImage = document.getElementById("gregImage");
+const biteBtn = document.getElementById("biteBtn");
+const multiBtn = document.getElementById("multiBtn");
+const autoBtn = document.getElementById("autoBtn");
+const mega1Btn = document.getElementById("megaMult1");
+const mega2Btn = document.getElementById("megaMult2");
+const megaBiteBtn = document.getElementById("megaBite");
 
-// Update display
+// --- Functions ---
 function updateDisplay() {
     pointsDisplay.textContent = points;
     multiplierDisplay.textContent = multiplier;
     biteDisplayEl.textContent = "Bite Power: +" + bitePower;
 
-    // Update button text
-    document.getElementById("biteBtn").textContent = `Buy Bite Boost (Cost: ${biteCost})`;
-    document.getElementById("multiBtn").textContent = `Buy x2 Multiplier (Cost: ${multiCost})`;
-    document.getElementById("autoBtn").textContent = `Buy Auto Clicker (Cost: ${autoCost}) | Owned: ${autoClickers}`;
+    biteBtn.textContent = `Buy Bite Boost (Cost: ${biteCost})`;
+    multiBtn.textContent = `Buy x2 Multiplier (Cost: ${multiCost})`;
+    autoBtn.textContent = `Buy Auto Clicker (Cost: ${autoCost}) | Owned: ${autoClickers}`;
 
-    // Mega boost buttons
-    document.getElementById("megaMult1").disabled = megaMult1Bought;
-    document.getElementById("megaMult2").disabled = megaMult2Bought;
-    document.getElementById("megaBite").disabled = megaBiteBought;
+    mega1Btn.disabled = megaMult1Bought;
+    mega2Btn.disabled = megaMult2Bought;
+    megaBiteBtn.disabled = megaBiteBought;
 }
 
-// Save to localStorage
+// Save game
 function saveGame() {
     localStorage.setItem("gregPoints", points);
     localStorage.setItem("gregMultiplier", multiplier);
@@ -211,7 +195,7 @@ function buyMegaBite() {
     }
 }
 
-// Auto clicker logic
+// Auto clicker
 setInterval(() => {
     if (autoClickers > 0) {
         points += autoClickers;
@@ -223,6 +207,5 @@ setInterval(() => {
 // Init display
 updateDisplay();
 </script>
-
 </body>
 </html>
