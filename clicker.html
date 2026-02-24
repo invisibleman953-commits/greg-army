@@ -16,31 +16,26 @@ body {
     padding-top: 60px;
 }
 
-button {
-    padding: 12px 20px;
-    margin: 15px;
-    border-radius: 8px;
-    border: none;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    background: limegreen;
-}
-
-button:hover {
-    background: green;
-}
-
 #backButton {
     position: fixed;
     top: 20px;
     left: 20px;
+    padding: 10px 15px;
+    font-weight: bold;
     background: orange;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
 }
 
-#gregButton {
-    font-size: 20px;
-    padding: 20px 40px;
+#gregImage {
+    width: 250px;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+
+#gregImage:active {
+    transform: scale(1.1);
 }
 </style>
 </head>
@@ -54,26 +49,23 @@ Back to Home
 <h1>Greg Clicker 🐊</h1>
 <p>Points: <span id="points">0</span></p>
 
-<button id="gregButton">Click Greg!</button>
+<img src="greg.png" id="gregImage" alt="Greg">
 
 <script>
-// Load saved points or start at 0
+// Load saved points
 let points = localStorage.getItem("gregPoints")
     ? parseInt(localStorage.getItem("gregPoints"))
     : 0;
 
 const pointsDisplay = document.getElementById("points");
-const gregButton = document.getElementById("gregButton");
+const gregImage = document.getElementById("gregImage");
 
-// Show saved score
 pointsDisplay.textContent = points;
 
-// Click event
-gregButton.addEventListener("click", () => {
+// Click Greg image
+gregImage.addEventListener("click", () => {
     points++;
     pointsDisplay.textContent = points;
-
-    // Save automatically
     localStorage.setItem("gregPoints", points);
 });
 </script>
