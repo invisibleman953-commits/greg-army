@@ -4,10 +4,6 @@
 <meta charset="UTF-8">
 <title>Greg Clicker</title>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
 <style>
 body {
     font-family: Arial;
@@ -39,87 +35,47 @@ button:hover {
     position: fixed;
     top: 20px;
     left: 20px;
-    padding: 10px 15px;
-    font-weight: bold;
     background: orange;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
 }
 
-#backButton:hover {
-    background: darkorange;
+#gregButton {
+    font-size: 20px;
+    padding: 20px 40px;
 }
-
-/* Add your clicker/game styles below */
 </style>
 </head>
 
 <body>
 
-<button id="backButton" onclick="location.href='index.html'">Back to Home</button>
+<button id="backButton" onclick="location.href='index.html'">
+Back to Home
+</button>
 
-<h1>Greg Clicker Game</h1>
-<p>Click Greg to gain points!</p>
-
-<!-- Your clicker HTML elements -->
-<button id="gregButton">Click Greg!</button>
+<h1>Greg Clicker 🐊</h1>
 <p>Points: <span id="points">0</span></p>
 
-<!-- Leaderboard inside clicker if desired -->
-<div id="leaderboardBox">
-<h2>Global Leaderboard</h2>
-<ol id="leaderboardList"></ol>
-</div>
+<button id="gregButton">Click Greg!</button>
 
 <script>
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyDNEp1EgyNll0d7Pm-I_VDBAd7o6sgeE_Y",
-  authDomain: "greg-clicker.firebaseapp.com",
-  projectId: "greg-clicker",
-  storageBucket: "greg-clicker.firebasestorage.app",
-  messagingSenderId: "84612781202",
-  appId: "1:84612781202:web:d11607b4500e43a186424b"
-};
+// Load saved points or start at 0
+let points = localStorage.getItem("gregPoints")
+    ? parseInt(localStorage.getItem("gregPoints"))
+    : 0;
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-// Clicker logic
-let points = 0;
 const pointsDisplay = document.getElementById("points");
 const gregButton = document.getElementById("gregButton");
 
+// Show saved score
+pointsDisplay.textContent = points;
+
+// Click event
 gregButton.addEventListener("click", () => {
     points++;
     pointsDisplay.textContent = points;
+
+    // Save automatically
+    localStorage.setItem("gregPoints", points);
 });
-
-// Leaderboard
-async function updateLeaderboard() {
-    try {
-        const snapshot = await db.collection("scores")
-            .orderBy("score", "desc")
-            .limit(10)
-            .get();
-
-        const list = document.getElementById("leaderboardList");
-        list.innerHTML = "";
-
-        snapshot.forEach(doc => {
-            const li = document.createElement("li");
-            li.textContent = doc.id + ": " + doc.data().score;
-            list.appendChild(li);
-        });
-    } catch (err) {
-        console.error("Leaderboard error:", err);
-    }
-}
-
-updateLeaderboard();
-setInterval(updateLeaderboard, 10000);
-
 </script>
 
 </body>
