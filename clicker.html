@@ -13,7 +13,7 @@ body {
     background-color: rgba(0,0,0,0.6);
     background-blend-mode: darken;
     color: white;
-    padding-top: 60px;
+    padding-top: 80px;
 }
 
 #backButton {
@@ -37,6 +37,24 @@ body {
 #gregImage:active {
     transform: scale(1.1);
 }
+
+button {
+    padding: 12px 20px;
+    margin: 10px;
+    border-radius: 8px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    background: limegreen;
+}
+
+button:hover {
+    background: green;
+}
+
+#boostSection {
+    margin-top: 25px;
+}
 </style>
 </head>
 
@@ -47,27 +65,91 @@ Back to Home
 </button>
 
 <h1>Greg Clicker 🐊</h1>
+
 <p>Points: <span id="points">0</span></p>
+<p>Multiplier: x<span id="multiplier">1</span></p>
 
 <img src="greg.png" id="gregImage" alt="Greg">
 
+<div id="boostSection">
+<h2>Boosts</h2>
+
+<button onclick="buyMultiplier()">
+Buy x2 Multiplier (Cost: 50)
+</button>
+
+<button onclick="buyAutoClicker()">
+Buy Auto Clicker (Cost: 100)
+</button>
+</div>
+
 <script>
-// Load saved points
+// Load saved data
 let points = localStorage.getItem("gregPoints")
     ? parseInt(localStorage.getItem("gregPoints"))
     : 0;
 
+let multiplier = localStorage.getItem("gregMultiplier")
+    ? parseInt(localStorage.getItem("gregMultiplier"))
+    : 1;
+
+let autoClickers = localStorage.getItem("gregAuto")
+    ? parseInt(localStorage.getItem("gregAuto"))
+    : 0;
+
 const pointsDisplay = document.getElementById("points");
+const multiplierDisplay = document.getElementById("multiplier");
 const gregImage = document.getElementById("gregImage");
 
-pointsDisplay.textContent = points;
-
-// Click Greg image
-gregImage.addEventListener("click", () => {
-    points++;
+function updateDisplay() {
     pointsDisplay.textContent = points;
+    multiplierDisplay.textContent = multiplier;
+}
+
+function saveGame() {
     localStorage.setItem("gregPoints", points);
+    localStorage.setItem("gregMultiplier", multiplier);
+    localStorage.setItem("gregAuto", autoClickers);
+}
+
+// Click Greg
+gregImage.addEventListener("click", () => {
+    points += multiplier;
+    updateDisplay();
+    saveGame();
 });
+
+// Buy multiplier
+function buyMultiplier() {
+    if (points >= 50) {
+        points -= 50;
+        multiplier *= 2;
+        updateDisplay();
+        saveGame();
+    }
+}
+
+// Buy auto clicker
+function buyAutoClicker() {
+    if (points >= 100) {
+        points -= 100;
+        autoClickers++;
+        updateDisplay();
+        saveGame();
+    }
+}
+
+// Auto clicker logic
+setInterval(() => {
+    if (autoClickers > 0) {
+        points += autoClickers;
+        updateDisplay();
+        saveGame();
+    }
+}, 1000);
+
+// Initialize display
+updateDisplay();
 </script>
 
 </body>
