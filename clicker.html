@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Greg Clicker</title>
+
 <style>
 body {
     font-family: Arial;
@@ -12,9 +13,9 @@ body {
     background-color: rgba(0,0,0,0.6);
     background-blend-mode: darken;
     color: white;
-    margin: 0;
-    padding-top: 50px;
+    padding-top: 80px;
 }
+
 #backButton {
     position: fixed;
     top: 20px;
@@ -26,218 +27,278 @@ body {
     border-radius: 8px;
     cursor: pointer;
 }
+
 #gregImage {
     width: 250px;
     cursor: pointer;
     transition: transform 0.1s ease;
+}
+
+#gregImage:active {
+    transform: scale(1.1);
+}
+
+button {
+    padding: 12px 20px;
+    margin: 10px;
+    border-radius: 8px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    background: limegreen;
+}
+
+button:hover {
+    background: green;
+}
+
+#boostSection, #skinsTab {
+    margin-top: 25px;
+}
+
+.skinCard {
+    display: inline-block;
+    width: 150px;
+    margin: 10px;
+    padding: 10px;
+    background: rgba(0,0,0,0.6);
+    border-radius: 12px;
+    text-align: center;
+    color: white;
+}
+
+.skinCard img {
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+}
+
+.skinCard button {
     display: block;
-    margin: 0 auto;
+    margin: 5px auto;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    background: limegreen;
 }
-#gregImage:active { transform: scale(1.1); }
-#gameContainer {
-    display: flex;
-    justify-content: space-between;
-    max-width: 900px;
-    margin: 20px auto;
+
+.skinCard button:hover {
+    background: green;
 }
-#boostSection, #megaBoostSection {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 200px;
+
+.skinTick {
+    color: gold;
+    font-weight: bold;
+    margin-top: 5px;
 }
-button { padding: 10px 15px; margin: 10px 0; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background: limegreen; }
-button:hover { background: green; }
-#authSection { margin-top: 20px; }
-.timerDisplay { font-size: 14px; margin-bottom: 5px; }
+
+@keyframes goldenPulse {
+    0% { filter: drop-shadow(0 0 10px gold) brightness(1.1); }
+    50% { filter: drop-shadow(0 0 30px gold) brightness(1.4); }
+    100% { filter: drop-shadow(0 0 10px gold) brightness(1.1); }
+}
+
+.goldenGlow {
+    animation: goldenPulse 2s infinite ease-in-out;
+}
 </style>
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
 </head>
+
 <body>
 
 <button id="backButton" onclick="location.href='index.html'">Back to Home</button>
+
 <h1>Greg Clicker 🐊</h1>
 <p>Points: <span id="points">0</span></p>
 <p>Multiplier: x<span id="multiplier">1</span></p>
-<p id="biteDisplay">Bite Power: +0</p>
 
 <img src="greg.png" id="gregImage" alt="Greg">
 
-<div id="gameContainer">
-    <div id="boostSection">
-        <h3>Boosts</h3>
-        <div class="timerDisplay" id="biteTimer">Bite: 0s</div>
-        <button id="biteBtn" onclick="buyBite()">Buy Bite Boost (Cost: 75)</button>
-
-        <div class="timerDisplay" id="multiTimer">Multiplier: 0s</div>
-        <button id="multiBtn" onclick="buyMultiplier()">Buy x2 Multiplier (Cost: 50)</button>
-
-        <div class="timerDisplay" id="autoTimer">AutoClicker: 0s</div>
-        <button id="autoBtn" onclick="buyAutoClicker()">Buy Auto Clicker (Cost: 100)</button>
-    </div>
-
-    <div id="megaBoostSection">
-        <h3>Mega Boosts</h3>
-        <button id="megaMult1" onclick="buyMegaMultiplier1()">x10 Multiplier (Cost: 50000)</button>
-        <button id="megaMult2" onclick="buyMegaMultiplier2()">x25 Multiplier (Cost: 200000)</button>
-        <button id="megaBite" onclick="buyMegaBite()">Mega Bite +50 (Cost: 100000)</button>
-    </div>
+<!-- Boosts -->
+<div id="boostSection">
+<h2>Boosts</h2>
+<button onclick="buyMultiplier()">Buy x2 Multiplier (Cost: 50)</button>
+<button onclick="buyAutoClicker()">Buy Auto Clicker (Cost: 100)</button>
+<!-- Add more boosts here as needed -->
 </div>
 
-<div id="authSection">
-<button id="loginBtn" onclick="login()">Sign in with Google</button>
-<button id="saveBtn" onclick="saveToFirebase()">Save Progress</button>
-<button id="loadBtn" onclick="loadFromFirebase()">Load Progress</button>
+<!-- Skins Mini-tab -->
+<div id="skinsTab">
+<h2>Skins</h2>
+<div id="skinShopContainer"></div>
 </div>
 
 <script>
-// --- Firebase Config ---
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+// ------------------ Game Variables ------------------
+let points = parseInt(localStorage.getItem("gregPoints")) || 0;
+let multiplier = parseInt(localStorage.getItem("gregMultiplier")) || 1;
+let autoClickers = parseInt(localStorage.getItem("gregAuto")) || 0;
+let currentSkin = localStorage.getItem("gregSkin") || "default";
+let unlockedSkins = JSON.parse(localStorage.getItem("gregUnlockedSkins")) || { default: true };
+let achievements = JSON.parse(localStorage.getItem("gregAchievements")) || {
+    clicks1000: false,
+    millionPoints: false,
+    goldenCritMaster: false
 };
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+let sessionCrits = 0; // for Golden Greg
 
-// --- Game Variables ---
-let points = parseInt(localStorage.getItem("gregPoints") || 0);
-let multiplier = parseInt(localStorage.getItem("gregMultiplier") || 1);
-let bitePower = parseInt(localStorage.getItem("gregBite") || 0);
-let autoClickers = parseInt(localStorage.getItem("gregAuto") || 0);
-
-let biteCost = parseInt(localStorage.getItem("gregBiteCost") || 75);
-let multiCost = parseInt(localStorage.getItem("gregMultiCost") || 50);
-let autoCost = parseInt(localStorage.getItem("gregAutoCost") || 100);
-
-let megaMult1Bought = localStorage.getItem("megaMult1") === "true";
-let megaMult2Bought = localStorage.getItem("megaMult2") === "true";
-let megaBiteBought = localStorage.getItem("megaBite") === "true";
-
-// Individual timers for boosts
-let boostTimers = {bite:0, multiplier:0, auto:0};
-
-// --- DOM Elements ---
 const pointsDisplay = document.getElementById("points");
 const multiplierDisplay = document.getElementById("multiplier");
-const biteDisplayEl = document.getElementById("biteDisplay");
 const gregImage = document.getElementById("gregImage");
 
-const biteBtn = document.getElementById("biteBtn");
-const multiBtn = document.getElementById("multiBtn");
-const autoBtn = document.getElementById("autoBtn");
+// ------------------ Skin Data ------------------
+const skinData = {
+    default: { name: "Default Greg", file: "greg.png", cost: 0 },
+    deadcells: { name: "Dead Cells Greg", file: "deadcells_greg.png", cost: 5000 },
+    kratos: { name: "Kratos Greg", file: "kratos_greg.png", cost: 20000 },
+    knight: { name: "Knight Greg", file: "knight_greg.png", cost: 50000 },
+    doom: { name: "Doom Greg", file: "doom_greg.png", achievement: "clicks1000" },
+    vader: { name: "Vader Greg", file: "vader_greg.png", achievement: "millionPoints" },
+    golden: { name: "Golden Greg", file: "golden_greg.png", achievement: "goldenCritMaster" }
+};
 
-const biteTimerEl = document.getElementById("biteTimer");
-const multiTimerEl = document.getElementById("multiTimer");
-const autoTimerEl = document.getElementById("autoTimer");
-
-const mega1Btn = document.getElementById("megaMult1");
-const mega2Btn = document.getElementById("megaMult2");
-const megaBiteBtn = document.getElementById("megaBite");
-
-// --- Update Display ---
-function updateDisplay(){
-    pointsDisplay.textContent=points;
-    multiplierDisplay.textContent=multiplier;
-    biteDisplayEl.textContent="Bite Power: +"+bitePower;
-
-    biteBtn.textContent=`Buy Bite Boost (Cost: ${biteCost})`;
-    multiBtn.textContent=`Buy x2 Multiplier (Cost: ${multiCost})`;
-    autoBtn.textContent=`Buy Auto Clicker (Cost: ${autoCost}) | Owned: ${autoClickers}`;
-
-    mega1Btn.disabled=megaMult1Bought;
-    mega2Btn.disabled=megaMult2Bought;
-    megaBiteBtn.disabled=megaBiteBought;
-
-    biteTimerEl.textContent = `Bite: ${boostTimers.bite}s`;
-    multiTimerEl.textContent = `Multiplier: ${boostTimers.multiplier}s`;
-    autoTimerEl.textContent = `AutoClicker: ${boostTimers.auto}s`;
+// ------------------ Display Functions ------------------
+function updateDisplay() {
+    pointsDisplay.textContent = points;
+    multiplierDisplay.textContent = multiplier;
 }
 
-// --- Save / Load ---
-function saveGame(){
+function saveGame() {
     localStorage.setItem("gregPoints", points);
     localStorage.setItem("gregMultiplier", multiplier);
-    localStorage.setItem("gregBite", bitePower);
     localStorage.setItem("gregAuto", autoClickers);
-    localStorage.setItem("gregBiteCost", biteCost);
-    localStorage.setItem("gregMultiCost", multiCost);
-    localStorage.setItem("gregAutoCost", autoCost);
-    localStorage.setItem("megaMult1", megaMult1Bought);
-    localStorage.setItem("megaMult2", megaMult2Bought);
-    localStorage.setItem("megaBite", megaBiteBought);
-    localStorage.setItem("boostTimers", JSON.stringify(boostTimers));
+    localStorage.setItem("gregSkin", currentSkin);
+    localStorage.setItem("gregUnlockedSkins", JSON.stringify(unlockedSkins));
+    localStorage.setItem("gregAchievements", JSON.stringify(achievements));
 }
 
-// --- Click Greg ---
-gregImage.addEventListener("click", ()=>{points+=multiplier+bitePower; updateDisplay(); saveGame();});
-
-// --- Normal Boosts ---
-function startBoostTimer(name,duration){
-    boostTimers[name]=duration;
-    const interval=setInterval(()=>{
-        if(boostTimers[name]>0){ boostTimers[name]--; updateDisplay(); }
-        else { 
-            if(name==="bite") bitePower=Math.max(0,bitePower-1);
-            if(name==="multiplier") multiplier=Math.max(1,multiplier/2);
-            if(name==="auto") autoClickers=Math.max(0,autoClickers-1);
-            updateDisplay(); clearInterval(interval);
+// ------------------ Click Greg ------------------
+gregImage.addEventListener("click", () => {
+    let baseGain = multiplier;
+    
+    // Example crit system: 10% chance
+    let isCrit = Math.random() < 0.1;
+    let critMultiplier = 2;
+    if (isCrit) {
+        baseGain *= critMultiplier;
+        sessionCrits++;
+        if (currentSkin === "golden") {
+            achievements.goldenCritMaster = achievements.goldenCritMaster || sessionCrits >= 10;
+            if (achievements.goldenCritMaster) {
+                unlockedSkins.golden = true;
+                alert("Golden Greg Unlocked!");
+            }
         }
-    },1000);
-}
+    }
 
-function buyBite(){ if(points>=biteCost){points-=biteCost; bitePower+=1; biteCost=Math.floor(biteCost*1.7); startBoostTimer("bite",30); updateDisplay(); saveGame();} }
-function buyMultiplier(){ if(points>=multiCost){points-=multiCost; multiplier*=2; multiCost=Math.floor(multiCost*2); startBoostTimer("multiplier",30); updateDisplay(); saveGame();} }
-function buyAutoClicker(){ if(points>=autoCost){points-=autoCost; autoClickers++; autoCost=Math.floor(autoCost*1.8); startBoostTimer("auto",30); updateDisplay(); saveGame();} }
+    points += baseGain;
+    updateDisplay();
+    saveGame();
 
-// --- Mega Boosts ---
-function buyMegaMultiplier1(){if(!megaMult1Bought && points>=50000){points-=50000; multiplier*=10; megaMult1Bought=true; updateDisplay(); saveGame();}}
-function buyMegaMultiplier2(){if(!megaMult2Bought && points>=200000){points-=200000; multiplier*=25; megaMult2Bought=true; updateDisplay(); saveGame();}}
-function buyMegaBite(){if(!megaBiteBought && points>=100000){points-=100000; bitePower+=50; megaBiteBought=true; updateDisplay(); saveGame();}}
+    // Achievement unlocks
+    if (points >= 1000000 && !achievements.millionPoints) {
+        achievements.millionPoints = true;
+        unlockedSkins.vader = true;
+        alert("Vader Greg Unlocked!");
+    }
+    if (points >= 1000 && !achievements.clicks1000) {
+        achievements.clicks1000 = true;
+        unlockedSkins.doom = true;
+        alert("Doom Greg Unlocked!");
+    }
 
-// --- Auto Clicker ---
-setInterval(()=>{if(autoClickers>0){points+=autoClickers; updateDisplay(); saveGame();}},1000);
+    renderSkinShop();
+});
 
-// --- Firebase Auth ---
-function login(){
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).then(result=>alert("Logged in as: "+result.user.email)).catch(err=>console.error(err));
-}
-function saveToFirebase(){
-    const user = auth.currentUser;
-    if(!user) return alert("Sign in first!");
-    db.collection("users").doc(user.uid).set({
-        points, multiplier, bitePower, autoClickers,
-        biteCost, multiCost, autoCost,
-        megaMult1Bought, megaMult2Bought, megaBiteBought,
-        boostTimers
-    }).then(()=>alert("Progress saved!"));
-}
-function loadFromFirebase(){
-    const user = auth.currentUser;
-    if(!user) return alert("Sign in first!");
-    db.collection("users").doc(user.uid).get().then(doc=>{
-        if(!doc.exists) return alert("No saved data!");
-        const data=doc.data();
-        points=data.points; multiplier=data.multiplier; bitePower=data.bitePower;
-        autoClickers=data.autoClickers; biteCost=data.biteCost; multiCost=data.multiCost; autoCost=data.autoCost;
-        megaMult1Bought=data.megaMult1Bought; megaMult2Bought=data.megaMult2Bought; megaBiteBought=data.megaBiteBought;
-        boostTimers=data.boostTimers || {};
+// ------------------ Boost Functions ------------------
+function buyMultiplier() {
+    if (points >= 50) {
+        points -= 50;
+        multiplier *= 2;
         updateDisplay();
-    });
+        saveGame();
+    }
 }
 
-// --- Init ---
+function buyAutoClicker() {
+    if (points >= 100) {
+        points -= 100;
+        autoClickers++;
+        updateDisplay();
+        saveGame();
+    }
+}
+
+// Auto clicker
+setInterval(() => {
+    if (autoClickers > 0) {
+        points += autoClickers;
+        updateDisplay();
+        saveGame();
+    }
+}, 1000);
+
+// ------------------ Skin Functions ------------------
+function applySkin() {
+    gregImage.classList.remove("goldenGlow");
+    gregImage.src = skinData[currentSkin].file;
+    if (currentSkin === "golden") {
+        gregImage.classList.add("goldenGlow");
+    }
+}
+
+function buySkin(key) {
+    const skin = skinData[key];
+    if (skin.cost && points >= skin.cost) {
+        points -= skin.cost;
+        unlockedSkins[key] = true;
+        updateDisplay();
+        renderSkinShop();
+        saveGame();
+    } else {
+        alert("Not enough points!");
+    }
+}
+
+function equipSkin(key) {
+    if (!unlockedSkins[key]) return;
+    currentSkin = key;
+    applySkin();
+    renderSkinShop();
+}
+
+// Render shop
+function renderSkinShop() {
+    const container = document.getElementById("skinShopContainer");
+    container.innerHTML = "";
+
+    for (let key in skinData) {
+        const skin = skinData[key];
+        const owned = unlockedSkins[key] || (skin.achievement && achievements[skin.achievement]);
+        if (skin.achievement && achievements[skin.achievement]) unlockedSkins[key] = true;
+
+        const card = document.createElement("div");
+        card.className = "skinCard";
+
+        card.innerHTML = `
+            <img src="${skin.file}" alt="${skin.name}">
+            <div>${skin.name}</div>
+            <div>${owned ? "✅ Owned" : (skin.cost ? "Cost: " + skin.cost : "Achievement: " + skin.achievement)}</div>
+            <button ${owned ? "" : "onclick='buySkin(\"" + key + "\")'"}>${owned ? "Owned" : "Buy"}</button>
+            <button ${owned ? "onclick='equipSkin(\"" + key + "\")'" : "disabled"}>Equip</button>
+        `;
+
+        container.appendChild(card);
+    }
+    saveGame();
+}
+
+// ------------------ Init ------------------
+applySkin();
 updateDisplay();
+renderSkinShop();
 </script>
 
 </body>
